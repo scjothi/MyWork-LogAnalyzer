@@ -1,0 +1,88 @@
+<project name="LogAnalyzer" default="default">
+	<description>
+		description
+	</description>
+	
+
+	<!-- ================================= target: default ================================= -->
+	<target name="default" depends="compile" description="description">
+
+	</target>
+
+	<target name="compile">
+
+		<javac srcdir="src" destdir="bin" classpath="jarfile" debug="on" />
+		
+		<!-- 
+			<javac destdir="tmp/testbin" includeantruntime="true" debug="true" debuglevel="lines,vars,source" deprecation="true">
+				<src>
+					<dirset dir="." erroronmissingdir="false">
+						<include name="test" />
+						<include name="gen-test" />
+						<include name="integration-test" />
+					</dirset>
+				</src>
+				<compilerarg line="-Xlint" />
+				<compilerarg line="-Xlint:-options" />
+				<compilerarg line="-Xlint:-path" />
+				<compilerarg line="-Xmaxwarns 9999" />
+				<classpath>
+					<pathelement location="@{classes.dir}" />
+					<fileset dir="@{lib.dir}" includes="*.jar" />
+					<path refid="path.jboss.classpath" />
+				</classpath>
+			</javac>
+		 -->
+		
+		<jar destfile="dist/loganalyzer.jar" >
+				<manifest>
+					<attribute name="Built-By" value="${user.name}" />
+					<attribute name="Jenkins-Job" value="${env.JOB_NAME}" />
+					<attribute name="Build-Number" value="${env.BUILD_NUMBER}" />
+					<attribute name="Build-Date-Time" value="${env.BUILD_ID}" />
+					<attribute name="Build-Tag" value="${env.BUILD_TAG}" />
+				</manifest>				
+				<fileset dir="bin" />									 
+		</jar>
+
+	</target>
+
+	<target name="clean">
+
+		<delete>
+			<fileset dir="dist" includes="**/*" />
+		</delete>
+
+	</target>
+	
+	<!-- desktop -->
+	<target name="deploy-local" depends="compile">
+	
+	    <mkdir dir="C:\solr\bakup" />
+
+		<delete>
+			<fileset dir="C:\solr\bakup" includes="**/*" />
+		</delete>
+		
+		<copy todir="C:\solr\bakup">
+			<fileset dir="C:\solr" includes="loganalyzer.jar" />
+		</copy>
+		
+		<copy todir="C:\solr">
+			<fileset dir="dist" includes="loganalyzer.jar" />
+		</copy>
+		
+		<copy todir="C:\apache-tomcat-7.0.42\webapps\loganalyzer\WEB-INF\lib">
+				<fileset dir="dist" includes="loganalyzer.jar" />
+		</copy>
+
+	</target>
+	
+	<!-- \\VA01PESBLOG001\solr -->
+	 <target name="deploy-VA01PESBLOG001" depends="compile">
+		<copy todir="\\VA01PESBLOG001\solr">
+			<fileset dir="dist" includes="loganalyzer.jar" />
+		</copy>
+	</target>
+
+</project>
