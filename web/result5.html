@@ -1,0 +1,564 @@
+<html>
+<head>
+    <title>LOG ANALYZER - DEMO</title>
+    <script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
+    <script type="text/javascript" src="./json2.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+
+  <script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
+  <script>
+
+  //globals
+  var dtstr="UTCTIMESTAMP:[TO]";
+  var numFound=0;  //default number of records found
+  var _start = 0;    //default starting record
+  var _rows = 100;  //records per page
+ 
+ $("#pagn").click(function () {
+        //var addressValue = $(this).attr("href");
+        alert('clicked' );
+  });
+
+  $(function() {
+    $( "#datepicker1" ).datepicker();
+	 $( "#datepicker2" ).datepicker();
+  });
+
+  $(function() {
+    $( "input[type=submit], a, button" )
+      .button()
+      .click(function( event ) {
+        event.preventDefault();
+		
+		GenerateQuery();
+      });
+  });
+
+String.prototype.insert = function (index, string) {
+  if (index > 0)
+    return this.substring(0, index) + string + this.substring(index, this.length);
+  else
+    return string + this;
+};
+
+function fetch(from, obj)
+{
+  //alert(obj);
+  
+  _start = from;
+  //alert(_start);
+  GenerateQuery();
+ 
+}
+
+function BuildDtQuery(from,to)
+{
+	var fdate= new Date();
+    var tdate= new Date();
+    
+	
+
+
+	
+	var r = '';
+
+	if(from != ''){	  
+		from = from.split('/');
+		//alert(from);
+		fdate.setDate(from[1]); fdate.setMonth(from[0]-1);  fdate.setFullYear(from[2]); 
+		//alert(fdate.toISOString());
+		r = dtstr.insert(dtstr.indexOf("TO"),fdate.toISOString()+' ');
+		  //alert(r);
+	}
+	else
+	{	
+	 r = dtstr.insert(dtstr.indexOf("TO"),'* ');
+	}
+
+	if(to != ''){	
+		to = to.split('/');
+		//alert(to);
+		tdate.setDate(to[1]); tdate.setMonth(to[0]-1);  tdate.setFullYear(to[2]); 
+		//alert(tdate.toISOString());
+		r =  r.insert(r.indexOf("]"),' '+tdate.toISOString());
+	}
+	else
+	{
+	 r = r.insert(r.indexOf("]"),' *');
+	}
+	
+
+	//alert(r);
+	
+
+	return r;
+}
+
+
+ function getPages(recsize){
+
+	var recct = _rows; //recs per page
+	var html = '';
+	var start = 0;
+	var end = 0;
+	var applySt="";
+      
+     for(i=recsize;i>0;)
+	 {
+    	 applySt="";
+	   if(end+recct<=recsize)
+	   {
+          i=i-recct;
+		  start = end+1;
+		  end = end + recct;
+		 
+	   }
+	   else
+	   {
+		  i=i-(recsize%recct)
+		  start = end+1;
+		  end = end + (recsize%recct);
+		 // html = html + start + '-'+ end + '|';
+	   }
+
+	    if(_start == start)
+		{
+     		applySt="class='disabled'";
+		}
+		
+
+        if(end == start)
+		{
+	      html = html + '<a id="pagn1" href="#" '+applySt+' onclick="fetch('+start+',this)">' + start + '</a>|';
+		}
+		else
+		{
+		  html = html + '<a id="pagn" href="#" '+applySt+' onclick="fetch('+start+',this)">' + start + '-'+ end + '</a>|';  //href="#'+start+':'+end+'"
+		}
+
+	 }
+
+	 _start=0;
+
+	  //alert(html);
+
+	  return html;
+
+	}
+
+function appendParam(_query1, _query2)
+  {
+        if(_query1 != '' && _query2 != '')
+		{
+		  _query1=_query1+'+AND+'+_query2;
+		}
+		else if(_query1 == '')
+		{
+		 _query1 = _query2;
+		}
+		
+
+        //alert(_query1);
+		return _query1;
+  }
+
+
+  function GenerateQuery()
+  {
+		//alert('clicked');
+
+		var srvr = document.getElementById("server").value;
+		var inst  = document.getElementById("instance").value;
+		var websvc  = document.getElementById("webservice").value;
+		var lvl  = document.getElementById("level").value;
+		var msg  = document.getElementById("message").value;
+		var fromDt  = document.getElementById("datepicker1").value;
+		var toDt  = document.getElementById("datepicker2").value;
+		var query = '';
+		var dtq='';
+
+		if(srvr != '*')
+		{
+		  query=appendParam(query,'SERVER:'+srvr);
+		}
+
+		if(inst != '*')
+		{
+		  query= appendParam(query,'INSTANCE:'+inst);
+		}
+
+		if(websvc != '*')
+		{
+		 query= appendParam(query,'WEBSERVICE:'+websvc);
+		}
+
+		if(lvl != '*')
+		{
+		 query= appendParam(query,'LEVEL:'+lvl);
+		}
+
+		if(msg != '*')
+		{
+		 query= appendParam(query,'MESSAGE:'+msg);
+		}
+
+		query=appendParam(query,BuildDtQuery(fromDt,toDt));
+
+		if(query == '')
+		{
+		 query='q=*:*';
+		}
+		else
+		{
+		 query='q='+query;
+		}
+
+		query = query+'&fl=id,SERVER,INSTANCE,WEBSERVICE,TIMESTAMP,LEVEL,THREAD,CLASS,MSGVALUE,_version_&wt=json&indent=true&start='+_start+'&rows='+_rows;
+
+		 document.getElementById("h123").value=query;//+'\n'+encodeURIComponent(query);
+
+		 ExecuteSearch(query);
+  }
+  </script>
+
+	<style>
+		span.tab{
+			padding: 0 80px; /* Or desired space*/
+		}
+
+		textarea{
+	width: 80%;
+	height: 50px;
+	border: 3px solid #cccccc;
+	padding: 5px;
+	font-family: Tahoma, sans-serif;
+	background-text: red;
+	background-position: bottom right;
+	background-repeat: no-repeat;
+}
+
+		select{
+	width: 80%;
+	height: 50px;
+	border: 3px solid #cccccc;
+	padding: 5px;
+	font-family: Tahoma, sans-serif;
+	background-position: bottom right;
+	background-repeat: no-repeat;
+}
+
+	input{
+	width: 80%;
+	height: 40px;
+	border: 3px solid #cccccc;
+	padding: 5px;
+	font-family: Tahoma, sans-serif;
+	background-position: bottom right;
+	background-repeat: no-repeat;
+}
+
+
+.disabled {
+text-decoration: none;  
+cursor:default;
+pointer-events: none;
+}
+
+	</style>
+
+	<style>
+div.abc { display: none }
+</style>
+     
+    <script type="text/javascript">
+
+ 
+	 function test(tab){
+	 //alert(tab);
+		//$(tab).show();
+	if ($(tab).is(":hidden")) {
+		$(tab).slideDown("slow");
+	} else {
+		$(tab).hide();
+	}
+
+   
+	 }
+
+
+function replacePipe(str, vnum)
+{
+if(str.indexOf("\t")!=-1){
+ //alert(str);
+ var result='';
+ var array=str.split("\t");
+ var causedByIndex = 0;
+ var causedByCount = 0;
+ var alpha = ["a", "b", "c", "d", "e", "f"];
+
+
+
+
+
+ for (var i = 0; i < array.length; i++) {
+
+
+     //first token
+	 if(i==0){
+      result = result+array[i];
+     }
+	 //tokens that are not first and those with no 'caused by'
+	 else if(i>0 && array[i].indexOf("»Caused by:") == -1){      
+
+
+
+		 //5th token from the begin or 5th token after 'caused by'
+		 if(i==causedByIndex+4)
+		 {
+		  result = result+'<br></div><div id="'+alpha[causedByCount]+vnum+'" class="abc" ><span class="tab"/>'+array[i];
+		 }
+
+		 //if this is the last token
+		 else if(i==array.length-1){
+		   if(i<causedByIndex+4)
+		   {
+			result = result+'<br><span class="tab"/>'+array[i]+'</div>';
+		   }
+		   else
+		   {
+		   result = result+'<br><span class="tab"/>'+array[i]+'</div>';
+		   }
+		 }
+		 else
+		 {
+		 result = result+'<br><span class="tab"/>'+array[i];
+		 }
+
+
+     }
+	
+	 //token that has a 'caused by'
+	 else if(array[i].indexOf("»Caused by:") != -1){
+	   //if this 'caused by' occured within 5th line from the begin or from the previous 'caused by'
+	   if(i<causedByIndex+4)
+	   {
+	    //result = result+'<br><span class="tab"/>'+array[i].replace("\tCaused by:", "<br>Caused by:");
+		result = result+'<br><span class="tab"/>'+array[i].replace("\t", "<br>");
+        result = result.replace("»Caused by:", "<br>Caused by:");
+	   }
+	   else
+	   {
+        //result = result+'<br><span class="tab"/>'+array[i].replace("\tCaused by:", "</div><br>Caused by:");
+		result = result+'<br><span class="tab"/>'+array[i].replace("\t", "</div><br>");
+		result = result.replace("»Caused by:", "</div><br>Caused by:");
+	   }
+	  causedByIndex = i;
+	  causedByCount++;
+     }
+
+	
+/*
+
+     if(i==causedByIndex+4){
+      result = result+'<div id="a'+vnum+'" class="abc" ><span class="tab"/>'+array[i];
+     }
+     else if(i==array.length-1){
+      result = result+'<br><span class="tab"/>'+array[i]+'</div>';
+     }
+     else if(i==0){
+      result = result+array[i];
+     }
+     else if(i>0 && array[i].indexOf("Caused by:") == -1){
+      
+	  result = result+'<br><span class="tab"/>'+array[i];
+     }
+     else if(i>0 && array[i].indexOf("Caused by:") != -1){
+      result = result+'</div><br>'+array[i];
+	  causedByIndex = i;
+     }
+
+*/
+ }
+
+
+
+ //alert(result);
+ //document.getElementById("h123").value=result;
+  return result;
+ }
+// alert(result)
+return str;
+ }
+
+        // JSON to CSV Converter
+        function ConvertToCSV(objArray) {
+		//alert(objArray);
+            var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
+            var str = '';
+ 
+            for (var i = 0; i < array.length; i++) {
+                var line = '';
+                for (var index in array[i]) {
+                    if (line != '') line += '|'
+ 
+                    line += array[i][index];
+					line = replacePipe(line, i); // line.replace(/¦/g,'<br><span class="tab"/>');
+					line = line.replace(/\t/g,'<br>');
+					
+                }
+
+
+                var hrf = "javascript:test('#a" + i + "')";
+				//alert(hrf);
+                str += '<tr><td valign="top">'+i+'</td><td>'+   line + '<br><a href="'+hrf+'">Show All</a>'   +   '</td></tr>';
+            }
+			
+			
+            return "<table width='100%' border='0'>"+str+"</table>";
+        }
+         
+        // Example
+     $(document).ready(function () {
+       //tbd
+	 });
+
+     function ExecuteSearch(url)
+	 {
+
+	 url = '/solr-example/collection1/select?'+url;
+
+	//$.getJSON("http://localhost:7070/solr-example/collection1/select?q=LEVEL%3AERROR&rows=1500&fl=id%2CSERVER%2CINSTANCE%2CWEBSERVICE%2CTIMESTAMP%2CLEVEL%2CTHREAD%2CCLASS%2CMSGVALUE%2C_version_&wt=json&indent=true", function(rec) {
+
+	$.getJSON(url, function(rec) {
+	
+	//alert(rec);
+
+	
+
+	$.each(rec, function(key, val) { 
+	if(key == "response")
+	{
+     
+	 numFound = val["numFound"];
+	 $('div.results').html('<tr><td width="100%"  bgcolor="white" colspan="5" >Number of Records: '+numFound +'|'+getPages(numFound)+ '</td></tr>');
+	
+	 jsonObject = val["docs"];
+	 //alert(jsonObject);
+	  $('#csv').html(ConvertToCSV(jsonObject));
+	  $('tr:nth-child(even)').css("background", "grey");
+	 }
+  });
+});
+         
+            // Create Object
+            var items;
+			var items1 = [				  
+					{
+        "id": "1424066",
+        "SERVER": "vaqesb01",
+        "INSTANCE": "QA-A",
+        "WEBSERVICE": "WebPortalWebServices-v798",
+        "TIMESTAMP": "2013-05-31 10:51:49,915",
+        "UTCTIMESTAMP": "2013-05-31T14:51:49.915Z",
+        "LEVEL": "ERROR",
+        "THREAD": "http--10.100.112.162-8080-18",
+        "CLASS": "com.agpcorp.webportalwebservices.helpers.IdAndPasswordHelper.validateUsername(IdAndPasswordHelper.java:1025)",
+        "MESSAGE": [
+          "[WPWS] validateUser: MDamgpcaid01 was not found in the system"
+        ],
+        "_version_": 1438944177620516900
+      },
+{
+       "id":"1457710",
+        "SERVER":"vaqesb01",
+        "INSTANCE":"QA-A",
+        "WEBSERVICE":"NextGenWS-v95",
+        "TIMESTAMP":"2013-06-03 09:42:16,391",
+        "UTCTIMESTAMP":"2013-06-03T13:42:16.391Z",
+        "LEVEL":"ERROR",
+        "THREAD":"http--10.100.112.162-8080-5",
+        "CLASS":"com.amerigroup.dao.FacetsMemberDao.getConnection(FacetsMemberDao.java:12189)",
+        "MESSAGE":"Database problem: javax.resource.ResourceException: IJ000453: Unable to get managed connection for java:/jdbc/Facets - error code=0, SQLState=null: java.sql.SQLException: javax.resource.ResourceException: IJ000453: Unable to get managed connection for java:/jdbc/Facets\tat org.jboss.jca.adapters.jdbc.WrapperDataSource.getConnection(WrapperDataSource.java:137)\tat com.amerigroup.dao.FacetsMemberDao.getConnection(FacetsMemberDao.java:12178)\tat com.amerigroup.dao.FacetsMemberDao.getAllEligibilitiesByAmerigroupID(FacetsMemberDao.java:3042)\tat com.amerigroup.dao.FacetsMemberDao.getAllEligibilitiesByAmerigroupID(FacetsMemberDao.java:2992)\tat com.amerigroup.nextgen.NextGenWS.setMemberEligibilityInfo(NextGenWS.java:814)\tat com.amerigroup.nextgen.NextGenWS.getMember(NextGenWS.java:645)\tat com.amerigroup.nextgenappeal.facade.athena20.NextGenPrpcFacadeImpl.getMember(NextGenPrpcFacadeImpl.java:462)\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\tat sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)\tat sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)\tat java.lang.reflect.Method.invoke(Method.java:601)\tat org.jboss.ws.common.invocation.AbstractInvocationHandlerJSE.invoke(AbstractInvocationHandlerJSE.java:111)\tat org.jboss.wsf.stack.cxf.JBossWSInvoker._invokeInternal(JBossWSInvoker.java:181)\tat org.jboss.wsf.stack.cxf.JBossWSInvoker.invoke(JBossWSInvoker.java:127)\tat org.apache.cxf.interceptor.ServiceInvokerInterceptor$1.run(ServiceInvokerInterceptor.java:58)\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)\tat java.util.concurrent.FutureTask$Sync.innerRun(FutureTask.java:334)\tat java.util.concurrent.FutureTask.run(FutureTask.java:166)\tat org.apache.cxf.workqueue.SynchronousExecutor.execute(SynchronousExecutor.java:37)\tat org.apache.cxf.interceptor.ServiceInvokerInterceptor.handleMessage(ServiceInvokerInterceptor.java:106)\tat org.apache.cxf.phase.PhaseInterceptorChain.doIntercept(PhaseInterceptorChain.java:263)\tat org.apache.cxf.transport.ChainInitiationObserver.onMessage(ChainInitiationObserver.java:121)\tat org.apache.cxf.transport.http.AbstractHTTPDestination.invoke(AbstractHTTPDestination.java:207)\tat org.jboss.wsf.stack.cxf.RequestHandlerImpl.handleHttpRequest(RequestHandlerImpl.java:91)\tat org.jboss.wsf.stack.cxf.transport.ServletHelper.callRequestHandler(ServletHelper.java:169)\tat org.jboss.wsf.stack.cxf.CXFServletExt.invoke(CXFServletExt.java:87)\tat org.apache.cxf.transport.servlet.AbstractHTTPServlet.handleRequest(AbstractHTTPServlet.java:185)\tat org.apache.cxf.transport.servlet.AbstractHTTPServlet.doPost(AbstractHTTPServlet.java:108)\tat javax.servlet.http.HttpServlet.service(HttpServlet.java:754)\tat org.jboss.wsf.stack.cxf.CXFServletExt.service(CXFServletExt.java:135)\tat org.jboss.wsf.spi.deployment.WSFServlet.service(WSFServlet.java:140)\tat javax.servlet.http.HttpServlet.service(HttpServlet.java:847)\tat org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:329)\tat org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:248)\tat com.amerigroup.utilities.Slf4jMdcFilter.doFilter(Slf4jMdcFilter.java:83)\tat org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:280)\tat org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:248)\tat org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:275)\tat org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:161)\tat org.jboss.as.web.security.SecurityContextAssociationValve.invoke(SecurityContextAssociationValve.java:153)\tat org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:155)\tat org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:102)\tat org.apache.catalina.valves.AccessLogValve.invoke(AccessLogValve.java:567)\tat org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:109)\tat org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:368)\tat org.apache.coyote.http11.Http11Processor.process(Http11Processor.java:877)\tat org.apache.coyote.http11.Http11Protocol$Http11ConnectionHandler.process(Http11Protocol.java:671)\tat org.apache.tomcat.util.net.JIoEndpoint$Worker.run(JIoEndpoint.java:930)\tat java.lang.Thread.run(Thread.java:722)»Caused by: IJ000453: Unable to get managed connection for java:/jdbc/Facets\tat org.jboss.jca.core.connectionmanager.AbstractConnectionManager.getManagedConnection(AbstractConnectionManager.java:390)\tat org.jboss.jca.core.connectionmanager.tx.TxConnectionManagerImpl.getManagedConnection(TxConnectionManagerImpl.java:368)\tat org.jboss.jca.core.connectionmanager.AbstractConnectionManager.allocateConnection(AbstractConnectionManager.java:464)\tat org.jboss.jca.adapters.jdbc.WrapperDataSource.getConnection(WrapperDataSource.java:129)\t... 48 more»Caused by: IJ000658: Unexpected throwable while trying to create a connection: null\tat org.jboss.jca.core.connectionmanager.pool.mcp.SemaphoreArrayListManagedConnectionPool.getConnection(SemaphoreArrayListManagedConnectionPool.java:371)\tat org.jboss.jca.core.connectionmanager.pool.AbstractPool.getSimpleConnection(AbstractPool.java:397)\tat org.jboss.jca.core.connectionmanager.pool.AbstractPool.getConnection(AbstractPool.java:365)\tat org.jboss.jca.core.connectionmanager.AbstractConnectionManager.getManagedConnection(AbstractConnectionManager.java:329)\t... 51 more»Caused by: Could not create connection\tat org.jboss.jca.adapters.jdbc.local.LocalManagedConnectionFactory.getLocalManagedConnection(LocalManagedConnectionFactory.java:277)\tat org.jboss.jca.adapters.jdbc.local.LocalManagedConnectionFactory.createManagedConnection(LocalManagedConnectionFactory.java:235)\tat org.jboss.jca.core.connectionmanager.pool.mcp.SemaphoreArrayListManagedConnectionPool.createConnectionEventListener(SemaphoreArrayListManagedConnectionPool.java:761)\tat org.jboss.jca.core.connectionmanager.pool.mcp.SemaphoreArrayListManagedConnectionPool.getConnection(SemaphoreArrayListManagedConnectionPool.java:343)\t... 54 more»Caused by: ORA-01035: ORACLE only available to users with RESTRICTED SESSION privilege\tat oracle.jdbc.driver.T4CTTIoer.processError(T4CTTIoer.java:445)\tat oracle.jdbc.driver.T4CTTIoer.processError(T4CTTIoer.java:389)\tat oracle.jdbc.driver.T4CTTIoer.processError(T4CTTIoer.java:382)\tat oracle.jdbc.driver.T4CTTIfun.processError(T4CTTIfun.java:600)\tat oracle.jdbc.driver.T4CTTIoauthenticate.processError(T4CTTIoauthenticate.java:445)\tat oracle.jdbc.driver.T4CTTIfun.receive(T4CTTIfun.java:450)\tat oracle.jdbc.driver.T4CTTIfun.doRPC(T4CTTIfun.java:192)\tat oracle.jdbc.driver.T4CTTIoauthenticate.doOAUTH(T4CTTIoauthenticate.java:380)\tat oracle.jdbc.driver.T4CTTIoauthenticate.doOAUTH(T4CTTIoauthenticate.java:760)\tat oracle.jdbc.driver.T4CConnection.logon(T4CConnection.java:401)\tat oracle.jdbc.driver.PhysicalConnection.<init>(PhysicalConnection.java:546)\tat oracle.jdbc.driver.T4CConnection.<init>(T4CConnection.java:236)\tat oracle.jdbc.driver.T4CDriverExtension.getConnection(T4CDriverExtension.java:32)\tat oracle.jdbc.driver.OracleDriver.connect(OracleDriver.java:521)\tat org.jboss.jca.adapters.jdbc.local.LocalManagedConnectionFactory.getLocalManagedConnection(LocalManagedConnectionFactory.java:249)\t... 57 more",
+        "_version_":1439172119815520257},
+				  {
+        "id": "1436996",
+        "SERVER": "vaqesb01",
+        "INSTANCE": "QA-A",
+        "WEBSERVICE": "WebPortalWebServices-v798",
+        "TIMESTAMP": "2013-05-31 13:29:27,494",
+        "UTCTIMESTAMP": "2013-05-31T17:29:27.494Z",
+        "LEVEL": "ERROR",
+        "THREAD": "http--10.100.112.162-8080-24",
+        "CLASS": "com.agpcorp.webportalwebservices.helpers.UserHelper.getUserByAmerigroupID(UserHelper.java:346)",
+        "MESSAGE": [
+          "[WPWS] getUserByAmerigroupID: Amerigroup ID 717688223 does not exist in the UserId table"
+        ],
+        "_version_": 1438944179405193200
+      }
+			];
+
+            // Convert Object to JSON
+           var jsonObject; // = JSON.stringify(items);
+                 
+            // Display JSON
+           // $('#json').text(jsonObject);
+             
+            // Convert JSON to CSV & Display CSV
+           // $('#csv').html(ConvertToCSV(jsonObject));
+        } //);
+    </script>
+	
+	<link rel="stylesheet" type="text/css" href="./result5.css" />	
+
+</head>
+<body>
+<table border="1" width="100%">
+
+  <tr>
+    <td bgcolor='grey'><b>LOG ANALYZER - DEMO</b></td>   
+  </tr>
+  <tr>
+    <td bgcolor="white"> 	
+	<table border="0" width="100%" >
+	  <tr bgcolor="white">
+		<td width="20%"  bgcolor="white">SERVER</td>   <td width="20%"  bgcolor="white">INSTANCE</td>  <td width="20%"  bgcolor="white">WEBSERVICE</td> <td width="20%"  bgcolor="white">LEVEL</td> <td width="20%"  bgcolor="white">MESSAGE</td>
+	  </tr>	
+      
+
+
+
+<tr bgcolor="white">
+		<td width="20%"  bgcolor="white"><select name="server" id="server"> <option value="*">All</option> <option value="vaqesb01">vaqesb01</option> <option value="vaqesb02">vaqesb02</option> </select></td>   
+		<td width="20%"  bgcolor="white"><select name="instance" id='instance'>  <option value="*">All</option>  <option value="QA-A">QA-A</option> </select></td>  
+		<td width="20%"  bgcolor="white"><textarea id='webservice' name='webservice'>*</textarea></td> 
+		<td width="20%"  bgcolor="white"><select name="level" id="level"><option value="*">All</option>  <option value="ERROR">ERROR</option><option value="INFO">INFO</option><option value="DEBUG">DEBUG</option> </select></td> 
+		<td width="20%"  bgcolor="white"><textarea id='message' name='message'>*</textarea></td>
+	  </tr>
+
+	  <tr bgcolor="white">
+		<td width="20%"  bgcolor="white">FROM DATE</td>   <td width="20%"  bgcolor="white">TO DATE</td>  <td width="20%"  bgcolor="white">&nbsp;</td> <td width="20%"  bgcolor="white">&nbsp;</td> <td width="20%"  bgcolor="white">&nbsp;</td>
+	  </tr>	
+
+      <tr bgcolor="white">
+		<td width="20%"  bgcolor="white"><input type="text" id="datepicker1" /></td>   <td width="20%"  bgcolor="white"><input type="text" id="datepicker2" /></td>  <td width="20%"  bgcolor="white" ><input type="submit" value="Get Results"></td> <td width="20%"  bgcolor="white">&nbsp;</td> <td width="20%"  bgcolor="white">&nbsp;</td>
+	  </tr>	
+
+	  <tr>
+		<td width="100%"  bgcolor="white" colspan="5"><textarea id='h123'>Select inputs above and press 'Get Results'.</textarea></td>
+	  </tr>	
+	 
+	  <tr><td width="100%"  bgcolor="white" colspan="5" > <div class="results"></div></td></tr>
+	  </table>
+	</td>
+  </tr>
+
+   <tr>
+    <td> <pre id="csv"></pre></td>
+  </tr>
+</table>
+    <pre id="json"></pre>
+
+	 
+  
+
+</body> </html>
